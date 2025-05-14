@@ -3,7 +3,7 @@ import joblib
 import numpy as np
 
 # Load your trained model
-model = joblib.load("fraud_model.pkl")  # Replace with your model's filename
+model = joblib.load("random_forest_model.pkl")  # Replace with your model's filename
 
 # Define prediction function
 def predict_fraud(distance_home, distance_last, ratio_price, repeat_retailer, used_chip, used_pin, online_order):
