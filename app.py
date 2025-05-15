@@ -89,8 +89,8 @@
 #st.subheader("Batch Prediction on Dataset")
 
 # Extract features from dataset
-X_num = df[numeric_features]
-X_cat = df[categorical_features]
+#X_num = df[numeric_features]
+#X_cat = df[categorical_features]
 
 # Scale numeric features
 #X_num_scaled = scaler.transform(X_num)
