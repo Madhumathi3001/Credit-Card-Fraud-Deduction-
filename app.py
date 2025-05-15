@@ -131,156 +131,88 @@
 #if st.checkbox("Show dataset with predictions"):
     #st.dataframe(df)
 
+----------
+
+
 import streamlit as st
 import joblib
-import pandas as pd
 import numpy as np
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
-import matplotlib.pyplot as plt
-import seaborn as sns
 
-# Load saved model and scaler
+# Load your saved model and scaler files (make sure these files are in your app folder)
 model = joblib.load("random_forest_model.pkl")
 scaler = joblib.load("scaler.pkl")
 
 st.title("Credit Card Fraud Detection")
 
-# Cached function to load default dataset
-@st.cache_data
-def load_data():
-    return pd.read_csv("card_transdata.csv")
+# Input fields for transaction details
+st.subheader("Enter Transaction Details")
 
-# --- Upload CSV option for batch prediction ---
-uploaded_file = st.file_uploader("Upload CSV file for batch prediction (optional)", type=["csv"])
+distance_home = st.number_input("Distance from Home", min_value=0.0, step=0.1, value=0.0)
+distance_last = st.number_input("Distance from Last Transaction", min_value=0.0, step=0.1, value=0.0)
+ratio_price = st.number_input("Ratio to Median Purchase Price", min_value=0.0, step=0.1, value=0.0)
 
-if uploaded_file:
-    df = pd.read_csv(uploaded_file)
-    st.success("Uploaded file loaded successfully!")
-else:
-    df = load_data()
+repeat_retailer = st.radio("Repeat Retailer", options=[0, 1], horizontal=True)
+used_chip = st.radio("Used Chip", options=[0, 1], horizontal=True)
+used_pin = st.radio("Used PIN Number", options=[0, 1], horizontal=True)
+online_order = st.radio("Online Order", options=[0, 1], horizontal=True)
 
-st.subheader("Transaction Data Preview")
-st.dataframe(df.head())
+# Threshold slider
+threshold = st.slider("Classification Threshold", min_value=0.0, max_value=1.0, value=0.5, step=0.01)
 
-# Features setup
-numeric_features = ['distance_from_home', 'distance_from_last_transaction', 'ratio_to_median_purchase_price']
-categorical_features = ['repeat_retailer', 'used_chip', 'used_pin_number', 'online_order']
-
-# --- Input validation function ---
-def validate_inputs(distance_home, distance_last, ratio_price):
-    errors = []
-    if distance_home < 0:
-        errors.append("Distance from Home cannot be negative.")
-    if distance_last < 0:
-        errors.append("Distance from Last Transaction cannot be negative.")
-    if ratio_price < 0:
-        errors.append("Ratio to Median Purchase Price cannot be negative.")
-    return errors
-
-# User inputs for single prediction
-st.subheader("Enter Transaction Details for Prediction")
-
-distance_home = st.number_input("Distance from Home", min_value=0.0, value=0.0, step=0.1)
-distance_last = st.number_input("Distance from Last Transaction", min_value=0.0, value=0.0, step=0.1)
-ratio_price = st.number_input("Ratio to Median Purchase Price", min_value=0.0, value=0.0, step=0.1)
-repeat_retailer = st.radio("Repeat Retailer", [0, 1], horizontal=True)
-used_chip = st.radio("Used Chip", [0, 1], horizontal=True)
-used_pin = st.radio("Used PIN Number", [0, 1], horizontal=True)
-online_order = st.radio("Online Order", [0, 1], horizontal=True)
-
-# Threshold slider for prediction
-st.subheader("Adjust Prediction Threshold")
-threshold = st.slider("Classification Threshold", 0.0, 1.0, 0.5, 0.01)
-
-# Validate inputs
-errors = validate_inputs(distance_home, distance_last, ratio_price)
-if errors:
-    for err in errors:
-        st.error(err)
-
-# Predict button for single input
-if st.button("Predict Single Transaction") and not errors:
-    numeric_input = np.array([[distance_home, distance_last, ratio_price]])
-    scaled_numeric = scaler.transform(numeric_input)
-    input_array = np.hstack((scaled_numeric, [[repeat_retailer, used_chip, used_pin, online_order]]))
-
-    proba = model.predict_proba(input_array)[0,1]
-    prediction = 1 if proba >= threshold else 0
-    result = "Fraud" if prediction == 1 else "Not Fraud"
-
-    # Real-time alert for fraud
-    if prediction == 1:
-        st.error(f"⚠️ ALERT: This transaction is predicted as FRAUD with probability {proba:.2f}")
-        if st.checkbox("Flag this transaction for manual review"):
-            st.info("Transaction flagged for review.")
+# Function to show colored indicator circle with text and probability
+def fraud_indicator(is_fraud, proba):
+    if is_fraud:
+        color = "#ff4b4b"  # Red
+        text = "⚠️ FRAUD DETECTED!"
     else:
-        st.success(f"Prediction: {result} (Probability: {proba:.2f})")
+        color = "#4CAF50"  # Green
+        text = "✅ Transaction Safe"
 
-# ------- Batch Prediction -------
+    st.markdown(
+        f"""
+        <div style="
+            background-color: {color};
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+            border-radius: 50%;
+            width: 150px;
+            height: 150px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px auto;">
+            {text}
+        </div>
+        <p style="text-align:center; font-size:16px;">Probability: {proba:.2f}</p>
+        """,
+        unsafe_allow_html=True
+    )
 
-st.subheader("Batch Prediction on Dataset")
+# Predict button
+if st.button("Predict Transaction"):
 
-# Check dataset contains necessary columns
-missing_cols = [col for col in numeric_features + categorical_features if col not in df.columns]
-if missing_cols:
-    st.error(f"Dataset is missing required columns: {missing_cols}")
-else:
-    X_num = df[numeric_features]
-    X_cat = df[categorical_features]
-
-    X_num_scaled = scaler.transform(X_num)
-    X = np.hstack((X_num_scaled, X_cat.values))
-
-    # Predict probabilities
-    probs = model.predict_proba(X)[:,1]
-    preds = (probs >= threshold).astype(int)
-    df['rf_pred'] = preds
-    df['rf_proba'] = probs
-
-    # Display prediction counts
-    st.write("Prediction counts:")
-    st.write(df['rf_pred'].value_counts())
-
-    # Show flagged transactions for manual review
-    flagged_df = df[df['rf_pred'] == 1]
-    st.write(f"Number of transactions flagged as fraud: {len(flagged_df)}")
-    if st.checkbox("Show flagged transactions"):
-        st.dataframe(flagged_df)
-
-    # Accuracy and metrics if true labels exist
-    if 'fraud' in df.columns:
-        y_true = df['fraud']
-
-        accuracy = accuracy_score(y_true, preds)
-        precision = precision_score(y_true, preds, zero_division=0)
-        recall = recall_score(y_true, preds, zero_division=0)
-        f1 = f1_score(y_true, preds, zero_division=0)
-
-        st.write(f"Model Performance at Threshold = {threshold:.2f}:")
-        st.write(f"- Accuracy: {accuracy:.4f}")
-        st.write(f"- Precision: {precision:.4f}")
-        st.write(f"- Recall: {recall:.4f}")
-        st.write(f"- F1 Score: {f1:.4f}")
-
-        # Confusion matrix plot
-        cm = confusion_matrix(y_true, preds)
-        fig, ax = plt.subplots()
-        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=['Not Fraud', 'Fraud'], yticklabels=['Not Fraud', 'Fraud'], ax=ax)
-        ax.set_xlabel('Predicted')
-        ax.set_ylabel('Actual')
-        ax.set_title('Confusion Matrix')
-        st.pyplot(fig)
-
+    # Validate inputs (optional)
+    if distance_home < 0 or distance_last < 0 or ratio_price < 0:
+        st.error("Distance and Ratio values cannot be negative.")
     else:
-        st.warning("No 'fraud' column found in dataset to calculate accuracy and other metrics.")
+        # Prepare numeric input and scale
+        numeric_input = np.array([[distance_home, distance_last, ratio_price]])
+        scaled_numeric = scaler.transform(numeric_input)
 
-# Show dataframe with predictions
-if st.checkbox("Show dataset with predictions"):
-    st.dataframe(df)
+        # Combine scaled numeric and categorical inputs
+        input_array = np.hstack((scaled_numeric, [[repeat_retailer, used_chip, used_pin, online_order]]))
 
-# Option to download predictions
-if 'rf_pred' in df.columns:
-    csv = df.to_csv(index=False)
-    st.download_button("Download predictions as CSV", data=csv, file_name="predictions.csv")
+        # Predict fraud probability
+        proba = model.predict_proba(input_array)[0, 1]
+        prediction = 1 if proba >= threshold else 0
+
+        # Show indicator circle
+        fraud_indicator(prediction == 1, proba)
+
+        # Optional flag checkbox if fraud
+        if prediction == 1:
+            if st.checkbox("Flag this transaction for manual review"):
+                st.info("Transaction flagged for review.")
 
 
