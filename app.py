@@ -57,7 +57,7 @@ model = joblib.load("random_forest_model.pkl")
 scaler = joblib.load("scaler.pkl")
 
 # Load prediction dataset
-df = pd.read_csv("credit_card_predictions.csv")  # replace with correct path if needed
+df = pd.read_csv("card_transdata.csv")  # replace with correct path if needed
 
 # Predict on loaded dataset
 X_columns = ['distance_from_home', 'distance_from_last_transaction', 'ratio_to_median_purchase_price',
