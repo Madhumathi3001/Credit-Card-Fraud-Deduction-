@@ -138,28 +138,23 @@ import streamlit as st
 import joblib
 import numpy as np
 
-# Load your saved model and scaler files (make sure these files are in your app folder)
+# Load model and scaler
 model = joblib.load("random_forest_model.pkl")
 scaler = joblib.load("scaler.pkl")
 
 st.title("Credit Card Fraud Detection")
 
-# Input fields for transaction details
-st.subheader("Enter Transaction Details")
-
 distance_home = st.number_input("Distance from Home", min_value=0.0, step=0.1, value=0.0)
 distance_last = st.number_input("Distance from Last Transaction", min_value=0.0, step=0.1, value=0.0)
 ratio_price = st.number_input("Ratio to Median Purchase Price", min_value=0.0, step=0.1, value=0.0)
 
-repeat_retailer = st.radio("Repeat Retailer", options=[0, 1], horizontal=True)
-used_chip = st.radio("Used Chip", options=[0, 1], horizontal=True)
-used_pin = st.radio("Used PIN Number", options=[0, 1], horizontal=True)
-online_order = st.radio("Online Order", options=[0, 1], horizontal=True)
+repeat_retailer = st.radio("Repeat Retailer", [0, 1], horizontal=True)
+used_chip = st.radio("Used Chip", [0, 1], horizontal=True)
+used_pin = st.radio("Used PIN Number", [0, 1], horizontal=True)
+online_order = st.radio("Online Order", [0, 1], horizontal=True)
 
-# Threshold slider
-threshold = st.slider("Classification Threshold", min_value=0.0, max_value=1.0, value=0.5, step=0.01)
+threshold = st.slider("Classification Threshold", 0.0, 1.0, 0.5, 0.01)
 
-# Function to show colored indicator circle with text and probability
 def fraud_indicator(is_fraud, proba):
     if is_fraud:
         color = "#ff4b4b"  # Red
@@ -167,52 +162,27 @@ def fraud_indicator(is_fraud, proba):
     else:
         color = "#4CAF50"  # Green
         text = "✅ Transaction Safe"
-
-    st.markdown(
-        f"""
-        <div style="
-            background-color: {color};
-            color: white;
-            font-size: 32px;
-            font-weight: bold;
-            border-radius: 50%;
-            width: 150px;
-            height: 150px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 20px auto;">
-            {text}
-        </div>
-        <p style="text-align:center; font-size:16px;">Probability: {proba:.2f}</p>
-        """,
-        unsafe_allow_html=True
+    html_code = (
+        f'<div style="background-color: {color}; color: white; '
+        'font-size: 32px; font-weight: bold; border-radius: 50%; '
+        'width: 150px; height: 150px; display: flex; '
+        'justify-content: center; align-items: center; margin: 20px auto;">'
+        f'{text}</div>'
+        f'<p style="text-align:center; font-size:16px;">Probability: {proba:.2f}</p>'
     )
+    st.markdown(html_code, unsafe_allow_html=True)
 
-# Predict button
 if st.button("Predict Transaction"):
-
-    # Validate inputs (optional)
     if distance_home < 0 or distance_last < 0 or ratio_price < 0:
         st.error("Distance and Ratio values cannot be negative.")
     else:
-        # Prepare numeric input and scale
         numeric_input = np.array([[distance_home, distance_last, ratio_price]])
         scaled_numeric = scaler.transform(numeric_input)
-
-        # Combine scaled numeric and categorical inputs
         input_array = np.hstack((scaled_numeric, [[repeat_retailer, used_chip, used_pin, online_order]]))
-
-        # Predict fraud probability
         proba = model.predict_proba(input_array)[0, 1]
         prediction = 1 if proba >= threshold else 0
-
-        # Show indicator circle
         fraud_indicator(prediction == 1, proba)
-
-        # Optional flag checkbox if fraud
-        if prediction == 1:
-            if st.checkbox("Flag this transaction for manual review"):
-                st.info("Transaction flagged for review.")
+        if prediction == 1 and st.checkbox("Flag this transaction for manual review"):
+            st.info("Transaction flagged for review.")
 
 
