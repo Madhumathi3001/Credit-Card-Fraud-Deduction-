@@ -93,13 +93,13 @@ X_num = df[numeric_features]
 X_cat = df[categorical_features]
 
 # Scale numeric features
-X_num_scaled = scaler.transform(X_num)
+#X_num_scaled = scaler.transform(X_num)
 
 # Combine scaled numeric and categorical features
-X = np.hstack((X_num_scaled, X_cat.values))
+#X = np.hstack((X_num_scaled, X_cat.values))
 
 # Predict fraud for whole dataset
-df['rf_pred'] = model.predict(X)
+#df['rf_pred'] = model.predict(X)
 
 # Display prediction counts
 #st.write("Prediction counts:")
