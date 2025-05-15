@@ -33,6 +33,10 @@
 
 #     result = "Fraud" if prediction[0] == 1 else "Not Fraud"
 #     st.success(f"Prediction: {result}")
+
+
+
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -40,18 +44,14 @@ import joblib
 from sklearn.metrics import accuracy_score
 import plotly.express as px
 
-# Load scaler and models
+# Load scaler and Random Forest model
 scaler = joblib.load("scaler.pkl")
 rf_model = joblib.load("random_forest_model.pkl")
-# lr_model = joblib.load("logistic_regression_model.pkl")
-# knn_model = joblib.load("knn_model.pkl")
-# xgb_model = joblib.load("xgboost_model.pkl")
 
 # Load dataset with true labels and features for evaluation
-# Make sure the CSV is in your working directory or provide full path
 df = pd.read_csv("card_transdata.csv")
 
-# Define feature columns (adjust as per your dataset)
+# Define feature columns (adjust to your dataset)
 features = [
     'distance_from_home', 'distance_from_last_transaction', 'ratio_to_median_purchase_price',
     'repeat_retailer', 'used_chip', 'used_pin_number', 'online_order'
@@ -59,39 +59,31 @@ features = [
 
 # Extract features and true labels
 X = df[features]
-y_true = df['fraud']  # Change to your actual label column name
+y_true = df['fraud']  # Change if your label column has a different name
 
-# Scale numeric features only (adjust based on your scaler training)
+# Scale numeric features only
 numeric_features = ['distance_from_home', 'distance_from_last_transaction', 'ratio_to_median_purchase_price']
 X_numeric = scaler.transform(X[numeric_features])
 X_scaled = np.hstack((X_numeric, X[['repeat_retailer', 'used_chip', 'used_pin_number', 'online_order']].values))
 
-# Predict fraud using each model
+# Predict fraud using Random Forest
 df['rf_pred'] = rf_model.predict(X_scaled)
-df['lr_pred'] = lr_model.predict(X_scaled)
-df['knn_pred'] = knn_model.predict(X_scaled)
-df['xgb_pred'] = xgb_model.predict(X_scaled)
 
-# Calculate accuracy for each model
-model_scores = {
-    'Random Forest': accuracy_score(y_true, df['rf_pred']),
-    'Logistic Regression': accuracy_score(y_true, df['lr_pred']),
-    'KNN': accuracy_score(y_true, df['knn_pred']),
-    'XGBoost': accuracy_score(y_true, df['xgb_pred'])
-}
+# Calculate accuracy for Random Forest
+accuracy = accuracy_score(y_true, df['rf_pred'])
 
+# Prepare dataframe for accuracy display
 accuracy_df = pd.DataFrame({
-    'Model': list(model_scores.keys()),
-    'Accuracy': list(model_scores.values())
+    'Model': ['Random Forest'],
+    'Accuracy': [accuracy]
 })
 
 # Streamlit UI
 st.title("Credit Card Fraud Detection Dashboard")
 
-st.subheader("ML Model Accuracy Comparison (Real-time)")
-
+st.subheader("Random Forest Model Accuracy (Real-time)")
 fig = px.bar(accuracy_df, x='Model', y='Accuracy', color='Model', text='Accuracy',
-             title="Accuracy of Different ML Models")
+             title="Random Forest Model Accuracy")
 st.plotly_chart(fig)
 
 st.subheader("Enter transaction details for single prediction")
