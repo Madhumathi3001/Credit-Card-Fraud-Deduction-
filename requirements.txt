@@ -2,7 +2,7 @@ streamlit
 joblib
 numpy
 scikit-learn
-streamlit
+matplotlib
 joblib
 numpy
 scikit-learn
