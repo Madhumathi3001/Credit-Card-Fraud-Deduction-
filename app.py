@@ -1,6 +1,7 @@
 import streamlit as st
 import joblib
 import numpy as np
+import joblib
 
 # Load saved model and scaler
 model = joblib.load("random_forest_model.pkl")
