@@ -43,13 +43,13 @@ import plotly.express as px
 # Load scaler and models
 scaler = joblib.load("scaler.pkl")
 rf_model = joblib.load("random_forest_model.pkl")
-lr_model = joblib.load("logistic_regression_model.pkl")
-knn_model = joblib.load("knn_model.pkl")
-xgb_model = joblib.load("xgboost_model.pkl")
+# lr_model = joblib.load("logistic_regression_model.pkl")
+# knn_model = joblib.load("knn_model.pkl")
+# xgb_model = joblib.load("xgboost_model.pkl")
 
 # Load dataset with true labels and features for evaluation
 # Make sure the CSV is in your working directory or provide full path
-df = pd.read_csv("credit_card_data.csv")
+df = pd.read_csv("credit_transdata.csv")
 
 # Define feature columns (adjust as per your dataset)
 features = [
