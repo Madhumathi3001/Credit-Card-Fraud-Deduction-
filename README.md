@@ -40,7 +40,7 @@ This project builds a machine learning model to predict whether a transaction is
 🧠 Model Selection
 
   - Tried multiple machine learning models: Logistic Regression, Decision Tree, KNN
-  - Random Forest Classifier performed best in terms of accuracy and precision
+  - Random Forest Classifier performed best in terms of accuracy and mean square error
   - Final model deployed using Streamlit
 
 
